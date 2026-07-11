@@ -140,7 +140,7 @@ flowchart LR
 
 The AI review path is implemented end-to-end in the API:
 
-`AIController -> AIService -> ContextBuilder -> Prompt Builder -> VLLMProvider -> ResponseParser -> BusinessRules`
+`AIController -> AIService -> ContextBuilder -> Agent Prompts (4 parallel) -> VLLMProvider (AMD) -> BusinessRules`
 
 ```
 Frontend

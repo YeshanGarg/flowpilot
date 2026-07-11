@@ -1,7 +1,6 @@
 import type { LLMProvider } from "./providers/llm-provider.js";
 import type { WorkflowAIContext, ParseWorkflowInput, ParseWorkflowResult, AIReviewResult, AIReviewSection, EscalationInput, EscalationResult } from "./ai.types.js";
 import { ContextBuilder } from "./builders/context.builder.js";
-import { ResponseParser } from "./parsers/response.parser.js";
 import { BusinessRules } from "./rules/business-rules.js";
 import { REVIEW_AGENTS, buildAgentPrompt, type AgentSpec } from "./prompts/agent.prompt.js";
 import { buildParseRequestPrompt } from "./prompts/parse-request.prompt.js";
@@ -12,7 +11,6 @@ export class AIService {
     constructor(
         private readonly provider: LLMProvider,
         private readonly contextBuilder = new ContextBuilder(),
-        private readonly parser = new ResponseParser(),
         private readonly businessRules = new BusinessRules()
     ) {}
 
