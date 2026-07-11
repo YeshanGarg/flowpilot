@@ -106,10 +106,10 @@ FlowPilot can be adapted for:
 FlowPilot uses AI as an accelerator at every stage, while humans and deterministic policy stay in control:
 
 - **Create** — describe a request in plain English and AI selects the template and fills the payload (`POST /ai/parse-workflow`).
-- **Triage** — AI reviews each request across Security, Compliance, Operations, and Cost (`POST /ai/review`).
+- **Triage (multi-agent)** — four specialized AI agents (Security, Compliance, Operations, Cost) run **in parallel on AMD Developer Cloud** to assess each request (`POST /ai/review`). The UI shows a live "AI Engine" panel with the model, AMD provider, agent count, and latency.
 - **Escalate** — deterministic guardrails auto-route high-risk requests (production/admin access, high value, or any HIGH/CRITICAL section) to human review — the AI never auto-approves risky requests.
 - **Track** — SLA timers show how long each step has been pending and flag overdue approvals.
-- **Remind** — AI drafts a ready-to-send follow-up nudge for stalled approvals.
+- **Auto-remind** — the **AI Escalation Engine** detects approvals stuck past their SLA, drafts a reminder email with AI (`POST /ai/escalation`), and logs every sent reminder to the immutable audit trail (`POST /workflows/:id/remind`).
 
 ## Architecture
 
@@ -300,8 +300,10 @@ The API container runs `prisma:generate`, `prisma:push`, and `prisma:seed` autom
 - `GET /workflows/:id`
 - `POST /workflows/:id/approve`
 - `POST /workflows/:id/reject`
+- `POST /workflows/:id/remind`
 - `POST /ai/review`
 - `POST /ai/parse-workflow`
+- `POST /ai/escalation`
 
 ## Demo
 
