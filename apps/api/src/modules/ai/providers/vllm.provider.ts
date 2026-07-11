@@ -17,9 +17,14 @@ export class VLLMProvider implements LLMProvider {
         request: GenerateRequest
     ): Promise<string> {
 
+        console.log(process.env.VLLM_URL);
         const baseUrl =
             process.env["VLLM_URL"] ??
             "http://127.0.0.1:8000/v1/chat/completions";
+
+        const model =
+            process.env["VLLM_MODEL"] ??
+            "Qwen/Qwen3-0.6B";
 
         let response: Response;
 
@@ -30,7 +35,7 @@ export class VLLMProvider implements LLMProvider {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: "Qwen/Qwen3-0.6B",
+                    model,
                     temperature: 0,
                     messages: [
                         {

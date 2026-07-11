@@ -5,7 +5,7 @@ export class ResponseParser {
         let parsed: unknown;
 
         try {
-            parsed = JSON.parse(response);
+            parsed = JSON.parse(response.trim());
         } catch {
             throw new Error("Failed to parse AI response: invalid JSON");
         }

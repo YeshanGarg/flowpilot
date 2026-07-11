@@ -18,3 +18,8 @@ apps/api/generated
 
 # OS
 .DS_Store
+
+# Personal / scratch (not for submission)
+AI_CHANGES.md
+apps/api/check.ts
+apps/api/listmodels.ts
