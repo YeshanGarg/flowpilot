@@ -124,6 +124,9 @@ export default function ApprovalsPage() {
         {workflows.map((workflow) => {
           const review = reviews[workflow.id];
           const decision = review?.decision;
+          const steps = workflow.workflowSteps || [];
+          const activeIdx = steps.findIndex((s) => s.status === "ACTIVE");
+          const active = activeIdx >= 0 ? steps[activeIdx] : undefined;
           return (
             <article key={workflow.id} className="card">
               <h2 className="font-semibold">{workflow.title}</h2>
@@ -133,6 +136,36 @@ export default function ApprovalsPage() {
                   <span className="rounded-full bg-rose-100 px-2 py-0.5 font-semibold text-rose-700">Overdue</span>
                 ) : null}
               </div>
+
+              {steps.length > 0 ? (
+                <div className="mt-3">
+                  {active ? (
+                    <p className="text-sm font-medium">
+                      Awaiting: <span className="text-brand-700">{active.workflowTemplateStep.name}</span>
+                      <span className="text-slate-500"> · Step {activeIdx + 1} of {steps.length}</span>
+                    </p>
+                  ) : null}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {steps.map((s, i) => {
+                      const done = s.status === "APPROVED";
+                      const rejected = s.status === "REJECTED";
+                      const isActive = s.status === "ACTIVE";
+                      const cls = done
+                        ? "bg-emerald-100 text-emerald-700"
+                        : rejected
+                        ? "bg-rose-100 text-rose-700"
+                        : isActive
+                        ? "bg-amber-100 text-amber-700 ring-1 ring-amber-400"
+                        : "bg-slate-100 text-slate-500";
+                      return (
+                        <span key={s.id} className={`rounded-full px-2.5 py-1 text-xs font-medium ${cls}`}>
+                          {i + 1}. {s.workflowTemplateStep.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
 
               {decision ? (
                 <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">

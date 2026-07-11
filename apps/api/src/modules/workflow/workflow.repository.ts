@@ -152,7 +152,17 @@ export class WorkflowRepository {
         return prismaClient.workflow.findMany({
             include: {
                 workflowTemplate: true,
-                requester: true
+                requester: true,
+                workflowSteps: {
+                    include: {
+                        workflowTemplateStep: true
+                    },
+                    orderBy: {
+                        workflowTemplateStep: {
+                            order: "asc"
+                        }
+                    }
+                }
             },
             orderBy: { createdAt: "desc" }
         });
