@@ -23,3 +23,6 @@ apps/api/generated
 AI_CHANGES.md
 apps/api/check.ts
 apps/api/listmodels.ts
+
+# Root-level markdown docs (kept local, not tracked)
+/*.md
