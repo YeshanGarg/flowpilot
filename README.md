@@ -1,120 +1,194 @@
 # FlowPilot
 
-FlowPilot is an AI-powered workflow automation platform with a reusable workflow engine.
+FlowPilot is an AI-powered workflow automation platform for building reusable approval and review processes inside organizations.
 
-## Stack
+## Problem FlowPilot Solves
 
-- Backend: Node.js, Express, TypeScript, Prisma, PostgreSQL
-- Frontend: Next.js, React, TailwindCSS
-- Monorepo: pnpm workspace + Turbo
+Most internal business requests are still handled by email, chat threads, and spreadsheet tracking. That creates three recurring problems:
 
-## Features Implemented
+- Process sprawl: every team builds a different request flow.
+- Poor visibility: no single source of truth for status, blockers, and ownership.
+- Slow decisions: approvers do not get structured context or risk signals quickly.
 
-- Organizations: create/list/get
-- Users: create/list/get
-- Workflow Templates: create/list/get
-- Workflows:
-  - create with transactional step execution generation
-  - list/get
+FlowPilot solves this with a generic workflow engine plus AI-assisted review, so teams can run consistent, auditable request workflows without writing request-specific backend logic.
+
+## Features
+
+- Generic workflow engine with template-driven execution.
+- Organization and user management (create/list/get).
+- Workflow templates (create/list/get).
+- Workflow lifecycle:
+  - create workflow from template
+  - transactional step execution generation
   - approve active step
   - reject active step
-- Audit logs:
-  - WORKFLOW_CREATED
-  - STEP_APPROVED
-  - STEP_REJECTED
-  - WORKFLOW_COMPLETED
+  - completion tracking
+- Audit events for key lifecycle transitions:
+  - `WORKFLOW_CREATED`
+  - `STEP_APPROVED`
+  - `STEP_REJECTED`
+  - `WORKFLOW_COMPLETED`
+- AI workflow review endpoint (`POST /ai/review`) for risk and recommendation support.
 
-## Local Development (without Docker)
+## Architecture
 
-1. Install dependencies:
-   - `pnpm install`
-2. Start PostgreSQL (local or Docker).
-3. Configure env in `apps/api/.env` from `.env.example`.
-4. Generate Prisma client:
-   - `cd apps/api && pnpm prisma:generate`
-5. Create the database schema:
-   - `cd apps/api && pnpm prisma:push`
-6. Seed data:
-   - `cd apps/api && pnpm prisma:seed`
-7. Start API:
-   - `cd apps/api && pnpm dev`
-8. Start Web:
-   - `cd apps/web && pnpm dev`
+FlowPilot follows a feature-based modular architecture in a pnpm monorepo.
 
-> Note: the project uses `prisma db push` (no migration history) for fast hackathon setup. `pnpm prisma:migrate` is available if you prefer generating migrations locally.
+- Monorepo orchestration: Turbo + pnpm workspaces
+- API app: Express + TypeScript + Prisma
+- Web app: Next.js + React + Tailwind
+- Persistence: PostgreSQL
 
-## Docker Deployment
+Design principles:
+
+- Everything is a workflow.
+- Workflow engine is the source of truth.
+- AI assists decisions but does not own core business logic.
+- Modules own their own routes, controllers, services, repositories, and types.
+
+```mermaid
+flowchart LR
+    UI[Next.js Web] --> API[Express API]
+    API --> WF[Workflow Engine]
+    API --> DB[(PostgreSQL via Prisma)]
+    API --> AI[AI Module]
+    AI --> VLLM[vLLM OpenAI-Compatible Endpoint]
+```
+
+## AI Workflow
+
+The AI review path is implemented end-to-end in the API:
+
+`AIController -> AIService -> ContextBuilder -> Prompt Builder -> VLLMProvider -> ResponseParser -> BusinessRules`
+
+At runtime:
+
+1. `POST /ai/review` receives structured workflow context.
+2. `AIService` validates required fields and builds prompt context.
+3. `VLLMProvider` calls an OpenAI-compatible vLLM endpoint (`VLLM_URL`).
+4. Response is parsed and normalized.
+5. `BusinessRules` applies deterministic post-processing before returning results.
+
+## AMD Developer Cloud + vLLM + Qwen3-0.6B
+
+FlowPilot is designed to use a self-hosted vLLM inference endpoint, including deployment on AMD Developer Cloud.
+
+- Inference server: vLLM
+- Default model in API provider: `Qwen/Qwen3-0.6B`
+- Provider type: OpenAI-compatible Chat Completions API
+
+Configure API to use your AMD Developer Cloud vLLM endpoint:
+
+```bash
+export VLLM_URL="https://<your-amd-dev-cloud-endpoint>/v1/chat/completions"
+export VLLM_MODEL="Qwen/Qwen3-0.6B"
+```
+
+Optional connectivity check:
+
+```bash
+curl -L "https://<your-amd-dev-cloud-endpoint>/v1/models"
+```
+
+If vLLM is unavailable, only AI review fails; core workflow APIs continue to operate.
+
+## Tech Stack
+
+- Backend: Node.js, Express, TypeScript, Prisma ORM, PostgreSQL
+- Frontend: Next.js 15, React 19, TailwindCSS
+- AI serving: vLLM (OpenAI-compatible API) with `Qwen/Qwen3-0.6B`
+- Monorepo/build tooling: pnpm workspaces, Turbo
+- Runtime utilities: Zod, Pino, CORS, Helmet, JWT
+
+## Setup Instructions
+
+### 1. Prerequisites
+
+- Node.js 20+
+- pnpm 11+
+- PostgreSQL 16+ (or Docker)
+
+### 2. Install Dependencies
 
 From repo root:
 
-1. Build and run everything with a single command:
-   - `docker compose -f docker/docker-compose.yml up --build`
+```bash
+pnpm install
+```
 
-The API container waits for Postgres to be healthy, then automatically runs
-`prisma generate`, `prisma db push`, and `prisma:seed` before starting. No manual
-migration step is required.
+### 3. Configure Environment
 
-Optional (for AI review), run a vLLM server and export its URL before running:
-   - `export VLLM_URL=http://127.0.0.1:8000/v1/chat/completions`
+Create `apps/api/.env` with at least:
 
-Services:
+```env
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/flowpilot
+VLLM_URL=http://127.0.0.1:8000/v1/chat/completions
+VLLM_MODEL=Qwen/Qwen3-0.6B
+```
+
+And for web (`apps/web/.env.local`):
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+### 4. Prepare Database
+
+```bash
+cd apps/api
+pnpm prisma:generate
+pnpm prisma:push
+pnpm prisma:seed
+```
+
+Note: this project uses `prisma db push` for rapid iteration. `pnpm prisma:migrate` is available if you want versioned migrations locally.
+
+### 5. Run in Development
+
+From repo root (runs API + Web):
+
+```bash
+pnpm dev
+```
+
+Or run individually:
+
+```bash
+pnpm api:dev
+pnpm web:dev
+```
+
+### 6. Run with Docker Compose
+
+From repo root:
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+The API container runs `prisma:generate`, `prisma:push`, and `prisma:seed` automatically after Postgres becomes healthy.
+
+### 7. Service URLs
 
 - API: http://localhost:3000
+- API Health: http://localhost:3000/health
 - Web: http://localhost:3001
-- Health: http://localhost:3000/health
 
-## API Endpoints
+## Key API Endpoints
 
-### Organizations
 - `POST /organizations`
 - `GET /organizations`
 - `GET /organizations/:id`
-
-### Users
 - `POST /users`
 - `GET /users`
 - `GET /users/:id`
-
-### Workflow Templates
 - `POST /workflow-templates`
 - `GET /workflow-templates`
 - `GET /workflow-templates/:id`
-
-### Workflows
 - `POST /workflows`
 - `GET /workflows`
 - `GET /workflows/:id`
 - `POST /workflows/:id/approve`
 - `POST /workflows/:id/reject`
-
-### AI
-- `POST /ai/review` (requires a running vLLM server)
-
-## Environment Variables
-
-| Variable | Scope | Description |
-| --- | --- | --- |
-| `PORT` | API | API port (default 3000) |
-| `DATABASE_URL` | API | PostgreSQL connection string |
-| `VLLM_URL` | API | vLLM OpenAI-compatible chat endpoint, used by `POST /ai/review` |
-| `NEXT_PUBLIC_API_URL` | Web | Base URL the frontend calls |
-
-## AI Module
-
-The AI pipeline (Controller → Service → ContextBuilder → PromptBuilder → LLMProvider → ResponseParser → BusinessRules) is fully wired. The vLLM provider calls an OpenAI-compatible endpoint (`VLLM_URL`); if the vLLM server is unreachable, `POST /ai/review` returns a clear error while the rest of the app is unaffected.
-
-## Known Limitations
-
-- Uses `prisma db push` instead of versioned migrations (hackathon speed).
-- No authentication/authorization (intentionally out of scope).
-- Approve/reject use transactions but no row-level locking, so highly concurrent approvals on the same workflow are not serialized.
-- `BusinessRules` is a passthrough placeholder; deterministic guardrails are not yet enforced.
-- AI review depends on an external vLLM server being reachable at `VLLM_URL`.
-
-## Future Improvements
-
-- Versioned Prisma migrations.
-- Optimistic concurrency on step transitions.
-- Deterministic business rules over AI output.
-- Authentication, RBAC, and rate limiting.
-- Notifications and background workers.
+- `POST /ai/review`
