@@ -129,6 +129,25 @@ export class WorkflowRepository {
         });
     }
 
+    async addReminder(workflowId: string, message: string) {
+        const workflow = await prismaClient.workflow.findUnique({ where: { id: workflowId } });
+
+        if (!workflow) {
+            throw new Error("Workflow not found");
+        }
+
+        await prismaClient.auditLog.create({
+            data: {
+                workflowId,
+                action: "REMINDER_SENT",
+                actor: "AI Escalation Engine",
+                message
+            }
+        });
+
+        return this.findById(workflowId);
+    }
+
     async findAll() {
         return prismaClient.workflow.findMany({
             include: {

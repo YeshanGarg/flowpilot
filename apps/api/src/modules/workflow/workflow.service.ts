@@ -94,4 +94,19 @@ export class WorkflowService {
 
 		return this.workflowRepository.reject(workflowId, actedByUserId, comments);
 	}
+
+	async remind(id: string, message: string) {
+		const workflowId = id?.trim();
+		const text = message?.trim();
+
+		if (!workflowId) {
+			throw new AppError("Workflow ID is required");
+		}
+
+		if (!text) {
+			throw new AppError("Reminder message is required");
+		}
+
+		return this.workflowRepository.addReminder(workflowId, text);
+	}
 }

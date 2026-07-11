@@ -39,4 +39,11 @@ export class WorkflowController {
 
 		return res.status(200).json({ success: true, data: workflow });
 	}
+
+	async remind(req: Request, res: Response) {
+		const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) ?? "";
+		const workflow = await workflowService.remind(id, req.body?.message);
+
+		return res.status(200).json({ success: true, data: workflow });
+	}
 }

@@ -6,5 +6,6 @@ const controller = new AIController();
 
 router.post("/review", (req, res) => controller.review(req, res));
 router.post("/parse-workflow", (req, res) => controller.parseWorkflow(req, res));
+router.post("/escalation", (req, res) => controller.escalation(req, res));
 
 export default router;

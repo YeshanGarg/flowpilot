@@ -96,4 +96,23 @@ export const apiClient = {
         body: JSON.stringify(input),
       }
     ),
+
+  draftEscalation: (input: {
+    workflowTitle: string;
+    currentStep: string;
+    pendingLabel: string;
+    requesterName: string;
+    approverName: string;
+    overallRisk?: string;
+  }) =>
+    api<{ subject: string; body: string; recipient: string }>("/ai/escalation", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
+  remindWorkflow: (id: string, message: string) =>
+    api<Workflow>(`/workflows/${id}/remind`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
 };

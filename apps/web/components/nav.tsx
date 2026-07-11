@@ -8,6 +8,7 @@ const links = [
   { href: "/workflows", label: "Workflows" },
   { href: "/workflows/create", label: "Create Workflow" },
   { href: "/approvals", label: "Approvals" },
+  { href: "/escalations", label: "Escalations" },
 ];
 
 export function Nav() {

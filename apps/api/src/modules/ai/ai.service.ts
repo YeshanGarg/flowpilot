@@ -1,10 +1,11 @@
 import type { LLMProvider } from "./providers/llm-provider.js";
-import type { WorkflowAIContext, ParseWorkflowInput, ParseWorkflowResult, AIReviewResult, AIReviewSection } from "./ai.types.js";
+import type { WorkflowAIContext, ParseWorkflowInput, ParseWorkflowResult, AIReviewResult, AIReviewSection, EscalationInput, EscalationResult } from "./ai.types.js";
 import { ContextBuilder } from "./builders/context.builder.js";
 import { ResponseParser } from "./parsers/response.parser.js";
 import { BusinessRules } from "./rules/business-rules.js";
 import { REVIEW_AGENTS, buildAgentPrompt, type AgentSpec } from "./prompts/agent.prompt.js";
 import { buildParseRequestPrompt } from "./prompts/parse-request.prompt.js";
+import { buildEscalationPrompt } from "./prompts/escalation.prompt.js";
 import { AppError } from "../../core/errors/app-error.js";
 
 export class AIService {
@@ -123,6 +124,42 @@ export class AIService {
             templateName: template.name,
             payload
         };
+    }
+
+    async draftEscalation(input: EscalationInput): Promise<EscalationResult> {
+        const recipient = input?.approverName?.trim() || "Approver";
+        const title = input?.workflowTitle?.trim();
+
+        if (!title) {
+            throw new AppError("workflowTitle is required", 400);
+        }
+
+        let json: Record<string, unknown> = {};
+        try {
+            const response = await this.provider.generate({
+                systemPrompt: "You write concise escalation reminders. Reply with JSON only.",
+                userPrompt: buildEscalationPrompt({
+                    workflowTitle: title,
+                    currentStep: input.currentStep || "the current step",
+                    pendingLabel: input.pendingLabel || "some time",
+                    requesterName: input.requesterName || "the requester",
+                    approverName: recipient,
+                    overallRisk: input.overallRisk
+                })
+            });
+            json = this.extractJson(response);
+        } catch {
+            json = {};
+        }
+
+        const subject = typeof json["subject"] === "string" && (json["subject"] as string).trim()
+            ? (json["subject"] as string).trim()
+            : `Action needed: "${title}" pending for ${input.pendingLabel || "a while"}`;
+        const body = typeof json["body"] === "string" && (json["body"] as string).trim()
+            ? (json["body"] as string).trim()
+            : `Reminder: "${title}" has been awaiting your approval at ${input.currentStep || "the current step"} for ${input.pendingLabel || "some time"}. Please review and take action to keep the workflow moving.`;
+
+        return { subject, body, recipient };
     }
 
     private extractJson(raw: string): Record<string, unknown> {

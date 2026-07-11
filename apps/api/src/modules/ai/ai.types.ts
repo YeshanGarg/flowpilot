@@ -127,3 +127,18 @@ export interface ParseWorkflowResult {
     templateName: string;
     payload: Record<string, unknown>;
 }
+
+export interface EscalationInput {
+    workflowTitle: string;
+    currentStep: string;
+    pendingLabel: string;
+    requesterName: string;
+    approverName: string;
+    overallRisk?: string;
+}
+
+export interface EscalationResult {
+    subject: string;
+    body: string;
+    recipient: string;
+}

@@ -9,5 +9,6 @@ router.get("/", (req, res) => workflowController.findAll(req, res));
 router.get("/:id", (req, res) => workflowController.findById(req, res));
 router.post("/:id/approve", (req, res) => workflowController.approve(req, res));
 router.post("/:id/reject", (req, res) => workflowController.reject(req, res));
+router.post("/:id/remind", (req, res) => workflowController.remind(req, res));
 
 export default router;

@@ -24,4 +24,13 @@ export class AIController {
             data: result
         });
     }
+
+    async escalation(req: Request, res: Response) {
+        const result = await aiService.draftEscalation(req.body);
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+    }
 }
