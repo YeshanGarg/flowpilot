@@ -26,3 +26,4 @@ apps/api/listmodels.ts
 
 # Root-level markdown docs (kept local, not tracked)
 /*.md
+!/README.md
