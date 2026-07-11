@@ -100,7 +100,16 @@ FlowPilot can be adapted for:
   - `STEP_APPROVED`
   - `STEP_REJECTED`
   - `WORKFLOW_COMPLETED`
-- AI workflow review endpoint (`POST /ai/review`) for risk and recommendation support.
+
+### AI across the request lifecycle
+
+FlowPilot uses AI as an accelerator at every stage, while humans and deterministic policy stay in control:
+
+- **Create** — describe a request in plain English and AI selects the template and fills the payload (`POST /ai/parse-workflow`).
+- **Triage** — AI reviews each request across Security, Compliance, Operations, and Cost (`POST /ai/review`).
+- **Escalate** — deterministic guardrails auto-route high-risk requests (production/admin access, high value, or any HIGH/CRITICAL section) to human review — the AI never auto-approves risky requests.
+- **Track** — SLA timers show how long each step has been pending and flag overdue approvals.
+- **Remind** — AI drafts a ready-to-send follow-up nudge for stalled approvals.
 
 ## Architecture
 
@@ -161,7 +170,9 @@ At runtime:
 2. `AIService` validates required fields and builds prompt context.
 3. `VLLMProvider` calls an OpenAI-compatible vLLM endpoint (`VLLM_URL`).
 4. Response is parsed and normalized.
-5. `BusinessRules` applies deterministic post-processing before returning results.
+5. `BusinessRules` applies **deterministic guardrails** — it detects high-risk signals (keywords like production/admin/root or high monetary value) and any HIGH/CRITICAL section, and forces such requests to `HUMAN_REVIEW`. The tiny model advises; policy decides.
+
+In addition to review, `POST /ai/parse-workflow` turns a plain-English request into a structured `{ title, template, payload }`, using the LLM with a deterministic fallback (keyword template matching + regex field extraction) so the form always fills sensibly even if the model output is imperfect.
 
 ## AMD Developer Cloud + vLLM + Qwen3-0.6B
 
@@ -290,6 +301,7 @@ The API container runs `prisma:generate`, `prisma:push`, and `prisma:seed` autom
 - `POST /workflows/:id/approve`
 - `POST /workflows/:id/reject`
 - `POST /ai/review`
+- `POST /ai/parse-workflow`
 
 ## Demo
 
