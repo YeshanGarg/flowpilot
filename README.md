@@ -1,6 +1,30 @@
 # FlowPilot
 
-FlowPilot is an AI-powered workflow automation platform for building reusable approval and review processes inside organizations.
+FlowPilot is an AI-powered workflow approval platform that helps organizations automate business processes with reusable workflow templates, structured approvals, audit trails, and AI-assisted decision support.
+
+Built using Express, Next.js, PostgreSQL, AMD Developer Cloud, vLLM, and Qwen3-0.6B.
+
+> Built for the AMD Developer Hackathon using:
+> - **AMD Developer Cloud** — hosted GPU inference
+> - **vLLM** — OpenAI-compatible serving layer
+> - **Qwen3-0.6B** — fast local review model
+> - **OpenAI-compatible inference API** — drop-in provider integration
+
+## Screenshots
+
+> Add three visuals here for maximum impact (drop images into `docs/`).
+
+### Dashboard
+
+![Dashboard](docs/dashboard.png)
+
+### AI Review
+
+![AI Review](docs/ai-review.png)
+
+### Workflow Timeline
+
+![Timeline](docs/workflow.png)
 
 ## Problem FlowPilot Solves
 
@@ -11,6 +35,54 @@ Most internal business requests are still handled by email, chat threads, and sp
 - Slow decisions: approvers do not get structured context or risk signals quickly.
 
 FlowPilot solves this with a generic workflow engine plus AI-assisted review, so teams can run consistent, auditable request workflows without writing request-specific backend logic.
+
+## How It Works (Product Flow)
+
+```
+Organization
+      │
+      ▼
+Workflow Template
+      │
+      ▼
+Workflow Instance
+      │
+      ▼
+Step Execution
+      │
+      ▼
+AI Review
+      │
+      ▼
+Approve / Reject
+      │
+      ▼
+Audit Log
+```
+
+## Why the AI Matters
+
+The AI assistant analyzes every workflow request and provides structured recommendations across:
+
+- Security
+- Compliance
+- Operational Risk
+- Cost
+- Final Recommendation
+
+This gives approvers additional context before making approval decisions while keeping business logic deterministic. The AI advises — humans (and the workflow engine) still decide.
+
+## Potential Use Cases
+
+FlowPilot can be adapted for:
+
+- Infrastructure change approvals
+- Procurement requests
+- Security exception workflows
+- Employee onboarding
+- Access requests
+- Finance approvals
+- Legal reviews
 
 ## Features
 
@@ -61,6 +133,28 @@ The AI review path is implemented end-to-end in the API:
 
 `AIController -> AIService -> ContextBuilder -> Prompt Builder -> VLLMProvider -> ResponseParser -> BusinessRules`
 
+```
+Frontend
+      │
+      ▼
+Express API
+      │
+      ▼
+Workflow Engine
+      │
+      ▼
+AI Service
+      │
+      ▼
+vLLM
+      │
+      ▼
+Qwen3-0.6B
+      │
+      ▼
+Structured JSON Review
+```
+
 At runtime:
 
 1. `POST /ai/review` receives structured workflow context.
@@ -76,6 +170,10 @@ FlowPilot is designed to use a self-hosted vLLM inference endpoint, including de
 - Inference server: vLLM
 - Default model in API provider: `Qwen/Qwen3-0.6B`
 - Provider type: OpenAI-compatible Chat Completions API
+
+### Why Qwen3-0.6B
+
+Qwen3-0.6B was selected because it provides fast local inference suitable for workflow review while running efficiently on AMD Developer Cloud through vLLM. Its small footprint keeps review latency low and cost near zero, which matters when every workflow step can trigger a review.
 
 Configure API to use your AMD Developer Cloud vLLM endpoint:
 
@@ -192,3 +290,17 @@ The API container runs `prisma:generate`, `prisma:push`, and `prisma:seed` autom
 - `POST /workflows/:id/approve`
 - `POST /workflows/:id/reject`
 - `POST /ai/review`
+
+## Demo
+
+- Video: _add link_
+- Live Demo: _add link_
+- Slides: _add link_
+
+## Future Improvements
+
+- Multi-agent workflow reviewers
+- Human feedback learning
+- Slack and Microsoft Teams integration
+- Role-aware AI reviewers
+- Workflow analytics dashboard
