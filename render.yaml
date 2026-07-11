@@ -13,8 +13,8 @@ services:
     dockerContext: .
     plan: free
     healthCheckPath: /health
-    # Create/update the DB schema and seed demo data before each deploy goes live
-    preDeployCommand: "cd apps/api && pnpm prisma:push && pnpm prisma:seed"
+    # Free tier has no preDeployCommand: run schema push + seed at container start (idempotent).
+    dockerCommand: sh -c "cd apps/api && pnpm prisma:push && pnpm prisma:seed && pnpm start"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
