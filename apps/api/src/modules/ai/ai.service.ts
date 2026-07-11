@@ -1,11 +1,10 @@
 import type { LLMProvider } from "./providers/llm-provider.js";
-import type { WorkflowAIContext, ParseWorkflowInput, ParseWorkflowResult } from "./ai.types.js";
+import type { WorkflowAIContext, ParseWorkflowInput, ParseWorkflowResult, AIReviewResult, AIReviewSection } from "./ai.types.js";
 import { ContextBuilder } from "./builders/context.builder.js";
 import { ResponseParser } from "./parsers/response.parser.js";
 import { BusinessRules } from "./rules/business-rules.js";
-import { buildWorkflowReviewPrompt } from "./prompts/workflow-review.prompt.js";
+import { REVIEW_AGENTS, buildAgentPrompt, type AgentSpec } from "./prompts/agent.prompt.js";
 import { buildParseRequestPrompt } from "./prompts/parse-request.prompt.js";
-import { SYSTEM_PROMPT } from "./prompts/system.prompt.js";
 import { AppError } from "../../core/errors/app-error.js";
 
 export class AIService {
@@ -20,14 +19,73 @@ export class AIService {
         this.validate(context);
 
         const aiContext = this.contextBuilder.build(context);
-        const userPrompt = buildWorkflowReviewPrompt(aiContext);
-        const response = await this.provider.generate({
-                            systemPrompt: SYSTEM_PROMPT,
-                            userPrompt
-                        });
-        const parsedResponse = this.parser.parse(response);
-        const validatedResponse = this.businessRules.apply(parsedResponse, aiContext);
-        return validatedResponse;
+
+        // Multi-agent review: four specialised agents run IN PARALLEL on the
+        // AMD Developer Cloud vLLM endpoint, each assessing one risk dimension.
+        const start = Date.now();
+        const sections = await Promise.all(
+            REVIEW_AGENTS.map((agent) => this.runAgent(agent, aiContext))
+        );
+        const latencyMs = Date.now() - start;
+
+        const confidence = Math.round(
+            sections.reduce((sum, s) => sum + (s.confidence || 0), 0) / (sections.length || 1)
+        );
+
+        const result: AIReviewResult = {
+            security: sections[0]!,
+            compliance: sections[1]!,
+            operations: sections[2]!,
+            cost: sections[3]!,
+            decision: {
+                overallRisk: "LOW",
+                recommendation: "APPROVE",
+                summary: "",
+                confidence
+            }
+        };
+
+        const validated = this.businessRules.apply(result, aiContext);
+        validated.engine = {
+            model: process.env["VLLM_MODEL"] ?? "Qwen/Qwen3-0.6B",
+            provider: "vLLM on AMD Developer Cloud",
+            agents: REVIEW_AGENTS.length,
+            parallel: true,
+            latencyMs
+        };
+        return validated;
+    }
+
+    private async runAgent(agent: AgentSpec, context: WorkflowAIContext): Promise<AIReviewSection> {
+        try {
+            const response = await this.provider.generate({
+                systemPrompt: `You are the ${agent.title}. Reply with JSON only.`,
+                userPrompt: buildAgentPrompt(agent, context)
+            });
+            return this.parseSection(this.extractJson(response));
+        } catch {
+            return {
+                risk: "LOW",
+                confidence: 0,
+                reasoning: ["Agent unavailable; defaulted to low risk."],
+                checks: []
+            };
+        }
+    }
+
+    private parseSection(json: Record<string, unknown>): AIReviewSection {
+        const risk = typeof json["risk"] === "string" ? (json["risk"] as string).toUpperCase() : "LOW";
+        const validRisk = ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(risk) ? risk : "LOW";
+        const confidenceRaw = typeof json["confidence"] === "number" ? (json["confidence"] as number) : 60;
+        const confidence = Math.min(100, Math.max(0, confidenceRaw));
+        const reasoning = Array.isArray(json["reasoning"])
+            ? (json["reasoning"] as unknown[]).filter((x): x is string => typeof x === "string")
+            : [];
+        const checks = Array.isArray(json["checks"])
+            ? (json["checks"] as unknown[]).filter((x): x is string => typeof x === "string")
+            : [];
+
+        return { risk: validRisk, confidence, reasoning, checks };
     }
 
     async parseWorkflow(input: ParseWorkflowInput): Promise<ParseWorkflowResult> {

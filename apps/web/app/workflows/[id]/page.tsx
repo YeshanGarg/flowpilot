@@ -135,7 +135,8 @@ export default function WorkflowDetailsPage() {
           <div>
             <h2 className="text-lg font-semibold">AI Review</h2>
             <p className="text-sm text-slate-600">
-              Qwen3-0.6B on AMD via vLLM assesses Security, Compliance, Operations, and Cost.
+              4 specialized AI agents run in parallel on AMD Developer Cloud (Qwen3-0.6B via vLLM) —
+              Security, Compliance, Operations, and Cost.
             </p>
           </div>
           <button
@@ -153,6 +154,19 @@ export default function WorkflowDetailsPage() {
 
         {review ? (
           <div className="mt-4 space-y-3">
+            {review.engine ? (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                  <span className="font-semibold">⚡ AI Engine</span>
+                  <span className="text-slate-600">Model: {review.engine.model}</span>
+                  <span className="text-slate-600">{review.engine.provider}</span>
+                  <span className="rounded-full bg-brand-100 px-2 py-0.5 font-semibold text-brand-700">
+                    {review.engine.agents} agents in parallel
+                  </span>
+                  <span className="text-slate-600">{review.engine.latencyMs} ms</span>
+                </div>
+              </div>
+            ) : null}
             <div className="rounded-lg border-2 border-brand-500 bg-brand-50 p-3">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-semibold">Recommendation: {review.decision.recommendation}</h3>

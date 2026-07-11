@@ -86,4 +86,11 @@ export interface AIReviewResult {
   operations: AIReviewSection;
   cost: AIReviewSection;
   decision: AIReviewDecision;
+  engine?: {
+    model: string;
+    provider: string;
+    agents: number;
+    parallel: boolean;
+    latencyMs: number;
+  };
 }

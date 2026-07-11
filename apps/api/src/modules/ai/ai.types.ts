@@ -71,6 +71,14 @@ export interface AIReviewDecision {
     escalated?: boolean;
 }
 
+export interface AIEngineInfo {
+    model: string;
+    provider: string;
+    agents: number;
+    parallel: boolean;
+    latencyMs: number;
+}
+
 export interface AIReviewResult {
     security: AIReviewSection;
 
@@ -81,6 +89,8 @@ export interface AIReviewResult {
     cost: AIReviewSection;
 
     decision: AIReviewDecision;
+
+    engine?: AIEngineInfo;
 }
 
 export interface WorkflowAIContext {
