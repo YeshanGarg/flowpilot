@@ -3,6 +3,8 @@ WORKDIR /app
 ENV CI=true
 ENV PNPM_CONFIG_CONFIRM_MODULES_PURGE=false
 
+RUN apk add --no-cache ca-certificates openssl && update-ca-certificates
+
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json .npmrc ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json ./apps/web/package.json
@@ -14,4 +16,4 @@ RUN cd apps/api && pnpm prisma:generate
 RUN cd apps/api && pnpm build
 
 EXPOSE 3000
-CMD ["sh", "-c", "cd apps/api && pnpm start"]
+CMD ["sh", "-c", "cd apps/api && pnpm prisma:push && pnpm prisma:seed && pnpm start"]
