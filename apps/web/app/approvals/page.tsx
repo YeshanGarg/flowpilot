@@ -88,11 +88,19 @@ export default function ApprovalsPage() {
 
   useEffect(() => {
     void load();
+    const interval = setInterval(() => void load(), 5000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <section className="space-y-5">
-      <h1 className="text-2xl font-bold">Approvals</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Approvals</h1>
+        <span className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+          Live
+        </span>
+      </div>
 
       <div className="card grid gap-3 md:grid-cols-2">
         <select className="rounded-md border border-slate-300 px-3 py-2" value={actedByUserId} onChange={(event) => setActedByUserId(event.target.value)}>

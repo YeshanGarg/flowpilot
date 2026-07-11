@@ -4,17 +4,24 @@
 
 :root {
   --bg: #f4f7f5;
+  --bg-grad: radial-gradient(circle at 15% 10%, #ffffff 0%, #f4f7f5 45%, #eaf2ee 100%);
   --text: #13231a;
   --card: #ffffff;
   --line: #d8e4dc;
-  --ok: #1f8f5f;
-  --warn: #b06915;
-  --danger: #a12828;
+}
+
+.dark {
+  --bg: #0b1220;
+  --bg-grad: radial-gradient(circle at 15% 10%, #0f1a2b 0%, #0b1220 55%, #070d17 100%);
+  --text: #e5edf5;
+  --card: #111a2b;
+  --line: #22304a;
 }
 
 body {
-  background: radial-gradient(circle at 15% 10%, #ffffff 0%, #f4f7f5 45%, #eaf2ee 100%);
+  background: var(--bg-grad);
   color: var(--text);
+  min-height: 100vh;
 }
 
 .container-shell {
@@ -26,3 +33,28 @@ body {
   background: var(--card);
   border-color: var(--line);
 }
+
+/* ---- Dark-mode retint of common utility classes ---- */
+.dark .bg-white,
+.dark .bg-white\/80 {
+  background-color: var(--card) !important;
+}
+.dark .bg-slate-50 {
+  background-color: #0f1a2b !important;
+}
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-slate-600 { color: #a9b6c8 !important; }
+.dark .text-slate-700 { color: #c4d0de !important; }
+.dark .border-slate-200 { border-color: var(--line) !important; }
+.dark .border-slate-300 { border-color: #2b3b57 !important; }
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #0e1726;
+  color: var(--text);
+  border-color: #2b3b57;
+}
+
+.dark .bg-brand-50 { background-color: #0e2a1e !important; }
+.dark .hover\:bg-slate-100:hover { background-color: #1a2740 !important; }
