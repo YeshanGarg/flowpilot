@@ -67,6 +67,8 @@ export interface AIReviewDecision {
     summary: string;
 
     confidence: number;
+
+    escalated?: boolean;
 }
 
 export interface AIReviewResult {

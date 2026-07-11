@@ -25,7 +25,7 @@ export class AIService {
                             userPrompt
                         });
         const parsedResponse = this.parser.parse(response);
-        const validatedResponse = this.businessRules.apply(parsedResponse);
+        const validatedResponse = this.businessRules.apply(parsedResponse, aiContext);
         return validatedResponse;
     }
 

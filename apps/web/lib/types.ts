@@ -59,7 +59,31 @@ export interface Workflow {
   requesterId: string;
   organizationId: string;
   createdAt: string;
+  payload?: Record<string, unknown> | null;
   workflowTemplate?: WorkflowTemplate;
   workflowSteps?: WorkflowStepExecution[];
   auditLogs?: AuditLog[];
+}
+
+export interface AIReviewSection {
+  risk: string;
+  confidence: number;
+  reasoning: string[];
+  checks: string[];
+}
+
+export interface AIReviewDecision {
+  overallRisk: string;
+  recommendation: string;
+  summary: string;
+  confidence: number;
+  escalated?: boolean;
+}
+
+export interface AIReviewResult {
+  security: AIReviewSection;
+  compliance: AIReviewSection;
+  operations: AIReviewSection;
+  cost: AIReviewSection;
+  decision: AIReviewDecision;
 }

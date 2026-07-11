@@ -1,4 +1,4 @@
-import type { ApiSuccess, Organization, User, Workflow, WorkflowTemplate } from "./types";
+import type { ApiSuccess, Organization, User, Workflow, WorkflowTemplate, AIReviewResult } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
@@ -71,5 +71,20 @@ export const apiClient = {
     api<Workflow>(`/workflows/${id}/reject`, {
       method: "POST",
       body: JSON.stringify(payload),
+    }),
+
+  reviewWorkflow: (context: {
+    workflowTitle: string;
+    workflowTemplate: string;
+    organizationName: string;
+    requesterName: string;
+    currentStep: string;
+    payload: Record<string, unknown>;
+    previousSteps: string[];
+    remainingSteps: string[];
+  }) =>
+    api<AIReviewResult>("/ai/review", {
+      method: "POST",
+      body: JSON.stringify(context),
     }),
 };
