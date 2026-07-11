@@ -1,0 +1,14 @@
+{
+  "name": "flowpilot",
+  "private": true,
+  "packageManager": "pnpm@11.10.0",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "api:dev": "pnpm --filter api dev",
+    "web:dev": "pnpm --filter web dev"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.4"
+  }
+}

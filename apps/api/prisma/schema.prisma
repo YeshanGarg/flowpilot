@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorkflowStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  REJECTED
+}
+
+enum WorkflowStepStatus {
+  PENDING
+  ACTIVE
+  APPROVED
+  REJECTED
+  SKIPPED
+}
+
+enum StepType {
+  APPROVAL
+  REVIEW
+  AI_REVIEW
+  AUTO_APPROVAL
+  NOTIFICATION
+}
+
+model Organization {
+  id   String @id @default(uuid())
+  name String
+
+  users             User[]
+  workflowTemplates WorkflowTemplate[]
+  workflows         Workflow[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id    String @id @default(uuid())
+  name  String
+  email String @unique
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  managerId String?
+  manager   User?   @relation("Manager", fields: [managerId], references: [id])
+  reports   User[]  @relation("Manager")
+
+  createdWorkflows      Workflow[]              @relation("Requester")
+  assignedWorkflowSteps WorkflowStepExecution[] @relation("AssignedUser")
+  actedWorkflowSteps    WorkflowStepExecution[] @relation("ActedUser")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model WorkflowTemplate {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  steps     WorkflowTemplateStep[]
+  workflows Workflow[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model WorkflowTemplateStep {
+  id String @id @default(uuid())
+
+  order Int
+  name  String
+  type  StepType
+
+  workflowTemplateId String
+  workflowTemplate   WorkflowTemplate @relation(fields: [workflowTemplateId], references: [id])
+
+  executions WorkflowStepExecution[]
+
+  @@unique([workflowTemplateId, order])
+  @@index([workflowTemplateId])
+}
+
+model Workflow {
+  id String @id @default(uuid())
+
+  title   String
+  payload Json?
+
+  status           WorkflowStatus @default(PENDING)
+  currentStepOrder Int            @default(1)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  workflowTemplateId String
+  workflowTemplate   WorkflowTemplate @relation(fields: [workflowTemplateId], references: [id])
+
+  requesterId String
+  requester   User   @relation("Requester", fields: [requesterId], references: [id])
+
+  workflowSteps WorkflowStepExecution[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([requesterId])
+  @@index([workflowTemplateId])
+}
+
+model WorkflowStepExecution {
+  id String @id @default(uuid())
+
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+
+  workflowTemplateStepId String
+  workflowTemplateStep   WorkflowTemplateStep @relation(fields: [workflowTemplateStepId], references: [id])
+
+  status WorkflowStepStatus @default(PENDING)
+
+  assignedToUserId String?
+  assignedToUser   User?   @relation("AssignedUser", fields: [assignedToUserId], references: [id])
+
+  actedByUserId String?
+  actedByUser   User?   @relation("ActedUser", fields: [actedByUserId], references: [id])
+
+  comments String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workflowId])
+  @@index([assignedToUserId])
+  @@index([actedByUserId])
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+
+  action  String
+  actor   String?
+  message String?
+
+  createdAt DateTime @default(now())
+
+  @@index([workflowId])
+}

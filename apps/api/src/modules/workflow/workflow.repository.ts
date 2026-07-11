@@ -1,0 +1,329 @@
+import prismaClient from "../../core/database/prisma.js";
+import { WorkflowStatus, WorkflowStepStatus } from "../../../generated/prisma/client.js";
+import { AppError } from "../../core/errors/app-error.js";
+import type { CreateWorkflowDto } from "./workflow.types.js";
+
+export class WorkflowRepository {
+    async create(createWorkflowDto: CreateWorkflowDto) {
+        const { title, workflowTemplateId, requesterId, organizationId, payload } = createWorkflowDto;
+
+        return prismaClient.$transaction(async (prisma) => {
+            const template = await prisma.workflowTemplate.findUnique({
+                where: { id: workflowTemplateId },
+                include: {
+                    steps: {
+                        orderBy: { order: "asc" }
+                    }
+                }
+            });
+
+            if (!template) {
+                throw new AppError("Workflow template not found");
+            }
+
+            if (template.steps.length === 0) {
+                throw new AppError("Workflow template has no steps");
+            }
+
+            if (template.organizationId !== organizationId) {
+                throw new AppError("Workflow template does not belong to the organization");
+            }
+
+            const requester = await prisma.user.findUnique({
+                where: { id: requesterId }
+            });
+
+            if (!requester) {
+                throw new AppError("Requester not found");
+            }
+
+            if (requester.organizationId !== organizationId) {
+                throw new AppError("Requester does not belong to the organization");
+            }
+
+            const workflow = await prisma.workflow.create({
+                data: {
+                    title,
+                    workflowTemplateId,
+                    requesterId,
+                    organizationId,
+                    payload,
+                    status: WorkflowStatus.RUNNING,
+                    currentStepOrder: template.steps[0]!.order
+                }
+            });
+
+            await prisma.workflowStepExecution.createMany({
+                data: template.steps.map((step, index) => ({
+                    workflowId: workflow.id,
+                    workflowTemplateStepId: step.id,
+                    status: index === 0 ? WorkflowStepStatus.ACTIVE : WorkflowStepStatus.PENDING,
+                    startedAt: index === 0 ? new Date() : null
+                }))
+            });
+
+            await prisma.auditLog.create({
+                data: {
+                    workflowId: workflow.id,
+                    action: "WORKFLOW_CREATED",
+                    actor: requesterId,
+                    message: `Workflow '${title}' created`
+                }
+            });
+
+            return prisma.workflow.findUnique({
+                where: { id: workflow.id },
+                include: {
+                    workflowTemplate: {
+                        include: {
+                            steps: {
+                                orderBy: { order: "asc" }
+                            }
+                        }
+                    },
+                    workflowSteps: {
+                        include: {
+                            workflowTemplateStep: true
+                        },
+                        orderBy: {
+                            workflowTemplateStep: {
+                                order: "asc"
+                            }
+                        }
+                    },
+                    auditLogs: {
+                        orderBy: { createdAt: "asc" }
+                    }
+                }
+            });
+        });
+    }
+
+    async findById(id: string) {
+        return prismaClient.workflow.findUnique({
+            where: { id },
+            include: {
+                workflowTemplate: {
+                    include: {
+                        steps: {
+                            orderBy: { order: "asc" }
+                        }
+                    }
+                },
+                workflowSteps: {
+                    include: {
+                        workflowTemplateStep: true,
+                        assignedToUser: true,
+                        actedByUser: true
+                    },
+                    orderBy: {
+                        workflowTemplateStep: {
+                            order: "asc"
+                        }
+                    }
+                },
+                auditLogs: {
+                    orderBy: { createdAt: "asc" }
+                }
+            }
+        });
+    }
+
+    async findAll() {
+        return prismaClient.workflow.findMany({
+            include: {
+                workflowTemplate: true,
+                requester: true
+            },
+            orderBy: { createdAt: "desc" }
+        });
+    }
+
+    async approve(workflowId: string, actedByUserId: string, comments?: string) {
+        return prismaClient.$transaction(async (prisma) => {
+            const workflow = await prisma.workflow.findUnique({
+                where: { id: workflowId },
+                include: {
+                    workflowSteps: {
+                        include: {
+                            workflowTemplateStep: true
+                        },
+                        orderBy: {
+                            workflowTemplateStep: {
+                                order: "asc"
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (!workflow) {
+                throw new AppError("Workflow not found");
+            }
+
+            const activeStep = workflow.workflowSteps.find((step) => step.status === WorkflowStepStatus.ACTIVE);
+
+            if (!activeStep) {
+                throw new AppError("No active workflow step found");
+            }
+
+            await prisma.workflowStepExecution.update({
+                where: { id: activeStep.id },
+                data: {
+                    status: WorkflowStepStatus.APPROVED,
+                    actedByUserId,
+                    comments: comments ?? null,
+                    completedAt: new Date()
+                }
+            });
+
+            await prisma.auditLog.create({
+                data: {
+                    workflowId,
+                    action: "STEP_APPROVED",
+                    actor: actedByUserId,
+                    message: `Step '${activeStep.workflowTemplateStep.name}' approved`
+                }
+            });
+
+            const nextStep = workflow.workflowSteps.find((step) => step.workflowTemplateStep.order > activeStep.workflowTemplateStep.order);
+
+            if (nextStep) {
+                await prisma.workflowStepExecution.update({
+                    where: { id: nextStep.id },
+                    data: {
+                        status: WorkflowStepStatus.ACTIVE,
+                        startedAt: new Date()
+                    }
+                });
+
+                await prisma.workflow.update({
+                    where: { id: workflowId },
+                    data: {
+                        status: WorkflowStatus.RUNNING,
+                        currentStepOrder: nextStep.workflowTemplateStep.order
+                    }
+                });
+            } else {
+                await prisma.workflow.update({
+                    where: { id: workflowId },
+                    data: {
+                        status: WorkflowStatus.COMPLETED
+                    }
+                });
+
+                await prisma.auditLog.create({
+                    data: {
+                        workflowId,
+                        action: "WORKFLOW_COMPLETED",
+                        actor: actedByUserId,
+                        message: "Workflow completed"
+                    }
+                });
+            }
+
+            return prisma.workflow.findUnique({
+                where: { id: workflowId },
+                include: {
+                    workflowTemplate: true,
+                    workflowSteps: {
+                        include: {
+                            workflowTemplateStep: true,
+                            assignedToUser: true,
+                            actedByUser: true
+                        },
+                        orderBy: {
+                            workflowTemplateStep: {
+                                order: "asc"
+                            }
+                        }
+                    },
+                    auditLogs: {
+                        orderBy: { createdAt: "asc" }
+                    }
+                }
+            });
+        });
+    }
+
+    async reject(workflowId: string, actedByUserId: string, comments?: string) {
+        return prismaClient.$transaction(async (prisma) => {
+            const workflow = await prisma.workflow.findUnique({
+                where: { id: workflowId },
+                include: {
+                    workflowSteps: {
+                        include: {
+                            workflowTemplateStep: true
+                        }
+                    }
+                }
+            });
+
+            if (!workflow) {
+                throw new AppError("Workflow not found");
+            }
+
+            const activeStep = workflow.workflowSteps.find((step) => step.status === WorkflowStepStatus.ACTIVE);
+
+            if (!activeStep) {
+                throw new AppError("No active workflow step found");
+            }
+
+            await prisma.workflowStepExecution.update({
+                where: { id: activeStep.id },
+                data: {
+                    status: WorkflowStepStatus.REJECTED,
+                    actedByUserId,
+                    comments: comments ?? null,
+                    completedAt: new Date()
+                }
+            });
+
+            await prisma.workflow.update({
+                where: { id: workflowId },
+                data: {
+                    status: WorkflowStatus.REJECTED
+                }
+            });
+
+            await prisma.auditLog.createMany({
+                data: [
+                    {
+                        workflowId,
+                        action: "STEP_REJECTED",
+                        actor: actedByUserId,
+                        message: `Step '${activeStep.workflowTemplateStep.name}' rejected`
+                    },
+                    {
+                        workflowId,
+                        action: "WORKFLOW_REJECTED",
+                        actor: actedByUserId,
+                        message: "Workflow rejected"
+                    }
+                ]
+            });
+
+            return prisma.workflow.findUnique({
+                where: { id: workflowId },
+                include: {
+                    workflowTemplate: true,
+                    workflowSteps: {
+                        include: {
+                            workflowTemplateStep: true,
+                            assignedToUser: true,
+                            actedByUser: true
+                        },
+                        orderBy: {
+                            workflowTemplateStep: {
+                                order: "asc"
+                            }
+                        }
+                    },
+                    auditLogs: {
+                        orderBy: { createdAt: "asc" }
+                    }
+                }
+            });
+        });
+    }
+}
