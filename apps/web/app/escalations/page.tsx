@@ -121,7 +121,7 @@ export default function EscalationsPage() {
                   <div className="mt-3">
                     {draft.sent ? (
                       <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                        ✓ Reminder sent &amp; logged to audit trail
+                        ✓ Reminder sent to Slack &amp; logged to audit trail
                       </span>
                     ) : (
                       <button

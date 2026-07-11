@@ -1,5 +1,6 @@
 import { WorkflowRepository } from "./workflow.repository.js";
 import { AppError } from "../../core/errors/app-error.js";
+import { sendSlackMessage } from "../../core/notifications/slack.js";
 import type { ApproveWorkflowDto, CreateWorkflowDto, RejectWorkflowDto } from "./workflow.types.js";
 
 export class WorkflowService {
@@ -107,6 +108,10 @@ export class WorkflowService {
 			throw new AppError("Reminder message is required");
 		}
 
-		return this.workflowRepository.addReminder(workflowId, text);
+		const deliveredToSlack = await sendSlackMessage(`:rotating_light: FlowPilot reminder\n${text}`);
+		const channel = deliveredToSlack ? "Slack" : "audit log";
+		const auditMessage = `${text} [delivered via ${channel}]`;
+
+		return this.workflowRepository.addReminder(workflowId, auditMessage);
 	}
 }
