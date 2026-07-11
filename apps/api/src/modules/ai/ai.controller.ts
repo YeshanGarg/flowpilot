@@ -15,4 +15,13 @@ export class AIController {
             data: review
         });
     }
+
+    async parseWorkflow(req: Request, res: Response) {
+        const result = await aiService.parseWorkflow(req.body);
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+    }
 }

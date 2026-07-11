@@ -100,3 +100,20 @@ export interface WorkflowAIContext {
 
     remainingSteps: string[];
 }
+
+export interface TemplateOption {
+    id: string;
+    name: string;
+}
+
+export interface ParseWorkflowInput {
+    text: string;
+    templates: TemplateOption[];
+}
+
+export interface ParseWorkflowResult {
+    title: string;
+    workflowTemplateId: string;
+    templateName: string;
+    payload: Record<string, unknown>;
+}

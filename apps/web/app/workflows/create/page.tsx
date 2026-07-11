@@ -19,6 +19,28 @@ export default function CreateWorkflowPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [nlText, setNlText] = useState("");
+  const [nlLoading, setNlLoading] = useState(false);
+
+  async function aiFill() {
+    if (!nlText.trim()) return;
+    setNlLoading(true);
+    setError("");
+    try {
+      const result = await apiClient.parseWorkflow({
+        text: nlText.trim(),
+        templates: templates.map((t) => ({ id: t.id, name: t.name })),
+      });
+      setTitle(result.title);
+      setWorkflowTemplateId(result.workflowTemplateId);
+      setPayloadText(JSON.stringify(result.payload, null, 2));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setNlLoading(false);
+    }
+  }
+
   useEffect(() => {
     async function load() {
       try {
@@ -66,6 +88,29 @@ export default function CreateWorkflowPage() {
   return (
     <section className="space-y-5">
       <h1 className="text-2xl font-bold">Create Workflow</h1>
+
+      <div className="card border-2 border-brand-500 bg-brand-50">
+        <h2 className="text-lg font-semibold">✨ Describe your request</h2>
+        <p className="text-sm text-slate-600">
+          Type in plain English and let AI pick the template and fill the form.
+        </p>
+        <textarea
+          className="mt-3 w-full rounded-md border border-slate-300 p-3 text-sm"
+          rows={2}
+          placeholder="e.g. I need admin access to the production database for an urgent incident, budget around $5000"
+          value={nlText}
+          onChange={(event) => setNlText(event.target.value)}
+        />
+        <button
+          type="button"
+          className="mt-2 rounded-md bg-brand-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          onClick={aiFill}
+          disabled={nlLoading}
+        >
+          {nlLoading ? "Thinking..." : "✨ AI Fill Form"}
+        </button>
+      </div>
+
       <form className="card grid gap-3" onSubmit={onSubmit}>
         <input
           className="rounded-md border border-slate-300 px-3 py-2"

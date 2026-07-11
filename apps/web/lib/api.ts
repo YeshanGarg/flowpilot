@@ -87,4 +87,13 @@ export const apiClient = {
       method: "POST",
       body: JSON.stringify(context),
     }),
+
+  parseWorkflow: (input: { text: string; templates: Array<{ id: string; name: string }> }) =>
+    api<{ title: string; workflowTemplateId: string; templateName: string; payload: Record<string, unknown> }>(
+      "/ai/parse-workflow",
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+      }
+    ),
 };
