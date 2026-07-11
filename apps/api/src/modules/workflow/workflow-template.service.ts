@@ -27,7 +27,8 @@ export class WorkflowTemplateService {
         const trimmedSteps = steps.map(step => ({
             order: step.order,
             name: step.name.trim(),
-            type: step.type
+            type: step.type,
+            requiredRole: step.requiredRole ?? null
         }));
 
         await this.organizationService.findById(trimmedOrganizationId);

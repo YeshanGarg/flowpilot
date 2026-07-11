@@ -196,6 +196,17 @@ export class WorkflowRepository {
                 throw new AppError("No active workflow step found");
             }
 
+            const requiredRole = activeStep.workflowTemplateStep.requiredRole;
+            if (requiredRole) {
+                const actor = await prisma.user.findUnique({ where: { id: actedByUserId } });
+                if (!actor) {
+                    throw new AppError("Acting user not found");
+                }
+                if (actor.role !== requiredRole && actor.role !== "ADMIN") {
+                    throw new AppError(`Only a ${requiredRole} can approve the step '${activeStep.workflowTemplateStep.name}' (you are ${actor.role})`, 403);
+                }
+            }
+
             await prisma.workflowStepExecution.update({
                 where: { id: activeStep.id },
                 data: {
@@ -296,6 +307,17 @@ export class WorkflowRepository {
 
             if (!activeStep) {
                 throw new AppError("No active workflow step found");
+            }
+
+            const requiredRole = activeStep.workflowTemplateStep.requiredRole;
+            if (requiredRole) {
+                const actor = await prisma.user.findUnique({ where: { id: actedByUserId } });
+                if (!actor) {
+                    throw new AppError("Acting user not found");
+                }
+                if (actor.role !== requiredRole && actor.role !== "ADMIN") {
+                    throw new AppError(`Only a ${requiredRole} can act on the step '${activeStep.workflowTemplateStep.name}' (you are ${actor.role})`, 403);
+                }
             }
 
             await prisma.workflowStepExecution.update({

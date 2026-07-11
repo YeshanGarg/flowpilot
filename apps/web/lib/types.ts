@@ -16,6 +16,7 @@ export interface User {
   email: string;
   organizationId: string;
   managerId: string | null;
+  role?: string;
 }
 
 export interface WorkflowTemplateStep {
@@ -23,6 +24,7 @@ export interface WorkflowTemplateStep {
   order: number;
   name: string;
   type: string;
+  requiredRole?: string | null;
 }
 
 export interface WorkflowTemplate {

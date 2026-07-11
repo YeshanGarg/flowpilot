@@ -30,7 +30,7 @@ export const apiClient = {
     }),
 
   getUsers: () => api<User[]>("/users"),
-  createUser: (payload: { name: string; email: string; organizationId: string; managerId?: string | null }) =>
+  createUser: (payload: { name: string; email: string; organizationId: string; managerId?: string | null; role?: string }) =>
     api<User>("/users", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -42,7 +42,7 @@ export const apiClient = {
     name: string;
     description?: string | null;
     organizationId: string;
-    steps: Array<{ order: number; name: string; type: string }>;
+    steps: Array<{ order: number; name: string; type: string; requiredRole?: string | null }>;
   }) =>
     api<WorkflowTemplate>("/workflow-templates", {
       method: "POST",

@@ -3,6 +3,7 @@ export interface CreateUserDto {
   email: string;
   organizationId: string;
   managerId?: string | null;
+  role?: string;
 }
 
 export interface UserResponseDto {

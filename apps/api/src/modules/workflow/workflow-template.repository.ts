@@ -10,10 +10,11 @@ export class WorkflowTemplateRepository {
                 description: description ?? null,
                 organizationId,
                 steps: {
-                        create: steps.map(({ order, name, type }) => ({
+                        create: steps.map(({ order, name, type, requiredRole }) => ({
                             order,
                             name,
-                            type
+                            type,
+                            requiredRole: requiredRole ?? null
                         }))
                     }
                 },

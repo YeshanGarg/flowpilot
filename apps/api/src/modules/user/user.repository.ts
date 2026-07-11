@@ -3,13 +3,14 @@ import type { CreateUserDto } from "./user.types.js";
 
 export class UserRepository {
     async create(createUserDto: CreateUserDto) {
-        const { name, email, organizationId, managerId } = createUserDto;
+        const { name, email, organizationId, managerId, role } = createUserDto;
         return prismaClient.user.create({
             data: {
                 name,
                 email,
                 organizationId,
                 managerId: managerId ?? null,
+                role: role ?? "EMPLOYEE",
             }
         });
     }

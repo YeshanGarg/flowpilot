@@ -106,7 +106,7 @@ export default function ApprovalsPage() {
         <select className="rounded-md border border-slate-300 px-3 py-2" value={actedByUserId} onChange={(event) => setActedByUserId(event.target.value)}>
           <option value="">Acting user</option>
           {users.map((user) => (
-            <option key={user.id} value={user.id}>{user.name}</option>
+            <option key={user.id} value={user.id}>{user.name} ({user.role || "EMPLOYEE"})</option>
           ))}
         </select>
         <input
@@ -143,6 +143,11 @@ export default function ApprovalsPage() {
                     <p className="text-sm font-medium">
                       Awaiting: <span className="text-brand-700">{active.workflowTemplateStep.name}</span>
                       <span className="text-slate-500"> · Step {activeIdx + 1} of {steps.length}</span>
+                      {active.workflowTemplateStep.requiredRole ? (
+                        <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                          requires {active.workflowTemplateStep.requiredRole}
+                        </span>
+                      ) : null}
                     </p>
                   ) : null}
                   <div className="mt-2 flex flex-wrap gap-1.5">

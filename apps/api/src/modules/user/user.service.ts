@@ -40,7 +40,7 @@ export class UserService {
             }
         }
 
-        return this.userRepository.create({ name, email, organizationId, managerId: managerId ?? null });
+        return this.userRepository.create({ name, email, organizationId, managerId: managerId ?? null, role: createUserDto.role ?? "EMPLOYEE" });
     }
 
     async findAll() {

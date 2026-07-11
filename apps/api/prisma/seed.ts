@@ -19,11 +19,28 @@ async function main() {
         where: { email: "manager@flowpilot.dev" },
         update: {
             name: "Manager User",
+            role: "MANAGER",
             organizationId: organization.id
         },
         create: {
             name: "Manager User",
             email: "manager@flowpilot.dev",
+            role: "MANAGER",
+            organizationId: organization.id
+        }
+    });
+
+    await prismaClient.user.upsert({
+        where: { email: "finance@flowpilot.dev" },
+        update: {
+            name: "Finance User",
+            role: "FINANCE",
+            organizationId: organization.id
+        },
+        create: {
+            name: "Finance User",
+            email: "finance@flowpilot.dev",
+            role: "FINANCE",
             organizationId: organization.id
         }
     });
@@ -32,12 +49,14 @@ async function main() {
         where: { email: "employee@flowpilot.dev" },
         update: {
             name: "Employee User",
+            role: "EMPLOYEE",
             organizationId: organization.id,
             managerId: manager.id
         },
         create: {
             name: "Employee User",
             email: "employee@flowpilot.dev",
+            role: "EMPLOYEE",
             organizationId: organization.id,
             managerId: manager.id
         }
@@ -68,19 +87,22 @@ async function main() {
                 workflowTemplateId: workflowTemplate.id,
                 order: 1,
                 name: "Manager Approval",
-                type: StepType.APPROVAL
+                type: StepType.APPROVAL,
+                requiredRole: "MANAGER"
             },
             {
                 workflowTemplateId: workflowTemplate.id,
                 order: 2,
                 name: "Finance Review",
-                type: StepType.REVIEW
+                type: StepType.REVIEW,
+                requiredRole: "FINANCE"
             },
             {
                 workflowTemplateId: workflowTemplate.id,
                 order: 3,
                 name: "Notify Requester",
-                type: StepType.NOTIFICATION
+                type: StepType.NOTIFICATION,
+                requiredRole: null
             }
         ]
     });

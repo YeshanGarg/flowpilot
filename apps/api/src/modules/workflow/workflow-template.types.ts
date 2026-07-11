@@ -9,6 +9,7 @@ export interface CreateWorkflowTemplateStepDto {
     order: number;
     name: string;
     type: WorkflowStepType;
+    requiredRole?: string | null;
 }
 
 export enum WorkflowStepType {

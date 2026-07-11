@@ -5,10 +5,12 @@ import { apiClient } from "../../lib/api";
 import type { Organization, WorkflowTemplate } from "../../lib/types";
 
 const STEP_TYPES = ["APPROVAL", "REVIEW", "AI_REVIEW", "AUTO_APPROVAL", "NOTIFICATION"];
+const ROLES = ["", "MANAGER", "FINANCE", "IT", "SECURITY", "ADMIN"];
 
 interface StepDraft {
   name: string;
   type: string;
+  requiredRole: string;
 }
 
 export default function WorkflowTemplatesPage() {
@@ -18,8 +20,8 @@ export default function WorkflowTemplatesPage() {
   const [description, setDescription] = useState("");
   const [organizationId, setOrganizationId] = useState("");
   const [steps, setSteps] = useState<StepDraft[]>([
-    { name: "Manager Approval", type: "APPROVAL" },
-    { name: "Finance Review", type: "REVIEW" },
+    { name: "Manager Approval", type: "APPROVAL", requiredRole: "MANAGER" },
+    { name: "Finance Review", type: "REVIEW", requiredRole: "FINANCE" },
   ]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,7 +31,7 @@ export default function WorkflowTemplatesPage() {
   }
 
   function addStep() {
-    setSteps((prev) => [...prev, { name: "", type: "APPROVAL" }]);
+    setSteps((prev) => [...prev, { name: "", type: "APPROVAL", requiredRole: "" }]);
   }
 
   function removeStep(index: number) {
@@ -61,9 +63,9 @@ export default function WorkflowTemplatesPage() {
     if (!name.trim() || !organizationId) return;
 
     const cleanSteps = steps
-      .map((s) => ({ name: s.name.trim(), type: s.type }))
+      .map((s) => ({ name: s.name.trim(), type: s.type, requiredRole: s.requiredRole || null }))
       .filter((s) => s.name.length > 0)
-      .map((s, i) => ({ order: i + 1, name: s.name, type: s.type }));
+      .map((s, i) => ({ order: i + 1, name: s.name, type: s.type, requiredRole: s.requiredRole }));
 
     if (cleanSteps.length === 0) {
       setError("Add at least one step.");
@@ -81,8 +83,8 @@ export default function WorkflowTemplatesPage() {
       setName("");
       setDescription("");
       setSteps([
-        { name: "Manager Approval", type: "APPROVAL" },
-        { name: "Finance Review", type: "REVIEW" },
+        { name: "Manager Approval", type: "APPROVAL", requiredRole: "MANAGER" },
+        { name: "Finance Review", type: "REVIEW", requiredRole: "FINANCE" },
       ]);
       await load();
     } catch (err) {
@@ -154,6 +156,16 @@ export default function WorkflowTemplatesPage() {
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
+                <select
+                  className="rounded-md border border-slate-300 px-2 py-2"
+                  value={step.requiredRole}
+                  onChange={(event) => updateStep(index, { requiredRole: event.target.value })}
+                  title="Which role can approve this step"
+                >
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>{r === "" ? "Anyone" : r}</option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   className="rounded-md px-2 py-2 text-sm text-rose-600 hover:bg-rose-50"
@@ -181,7 +193,9 @@ export default function WorkflowTemplatesPage() {
             <p className="mt-1 text-sm text-slate-600">{template.description || "No description"}</p>
             <ul className="mt-3 list-inside list-decimal text-sm text-slate-700">
               {template.steps.map((step) => (
-                <li key={step.id}>{step.name} ({step.type})</li>
+                <li key={step.id}>
+                  {step.name} ({step.type}){step.requiredRole ? ` — approver: ${step.requiredRole}` : ""}
+                </li>
               ))}
             </ul>
           </article>
