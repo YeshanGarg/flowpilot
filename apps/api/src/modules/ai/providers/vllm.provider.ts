@@ -17,7 +17,6 @@ export class VLLMProvider implements LLMProvider {
         request: GenerateRequest
     ): Promise<string> {
 
-        console.log(process.env.VLLM_URL);
         const baseUrl =
             process.env["VLLM_URL"] ??
             "http://127.0.0.1:8000/v1/chat/completions";
@@ -26,14 +25,22 @@ export class VLLMProvider implements LLMProvider {
             process.env["VLLM_MODEL"] ??
             "Qwen/Qwen3-0.6B";
 
+        const apiKey = process.env["VLLM_API_KEY"];
+
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json"
+        };
+
+        if (apiKey) {
+            headers["Authorization"] = `Bearer ${apiKey}`;
+        }
+
         let response: Response;
 
         try {
             response = await fetch(baseUrl, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers,
                 body: JSON.stringify({
                     model,
                     temperature: 0,
