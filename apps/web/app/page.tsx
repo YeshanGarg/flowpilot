@@ -7,7 +7,7 @@ import { isOverdue } from "../lib/format";
 import type { Workflow } from "../lib/types";
 
 const SAMPLE_REQUESTS: Array<{ title: string; payload: Record<string, unknown> }> = [
-  { title: "Production DB Admin Access", payload: { resource: "prod-db", access: "admin", amount: 5000, reason: "urgent incident" } },
+  { title: "Production DB Admin Access", payload: { resource: "prod-db", access: "admin", reason: "investigate urgent outage" } },
   { title: "New Laptop Request", payload: { item: "MacBook Pro", amount: 1500, reason: "device refresh" } },
   { title: "Office Supplies", payload: { item: "notebooks", amount: 45, reason: "team stationery" } },
   { title: "Conference Travel Reimbursement", payload: { amount: 1200, reason: "AMD Dev Summit" } },
@@ -53,17 +53,23 @@ export default function DashboardPage() {
         apiClient.getWorkflowTemplates(),
         apiClient.getUsers(),
       ]);
-      const org = orgs[0];
       const template = templates[0];
-      const requester = users[0];
-      if (!org || !template || !requester) {
-        throw new Error("Seed an organization, template, and user first.");
+      if (!template) {
+        throw new Error("Create a workflow template first.");
+      }
+      // Keep the tenant consistent: the backend requires the template and
+      // requester to belong to the same organization as the workflow.
+      const orgId = template.organizationId;
+      const org = orgs.find((o) => o.id === orgId) ?? orgs[0];
+      const requester = users.find((u) => u.organizationId === orgId) ?? users[0];
+      if (!org || !requester) {
+        throw new Error("Seed an organization and a user first.");
       }
       for (const sample of SAMPLE_REQUESTS) {
         await apiClient.createWorkflow({
           title: sample.title,
           workflowTemplateId: template.id,
-          organizationId: org.id,
+          organizationId: orgId,
           requesterId: requester.id,
           payload: sample.payload,
         });
