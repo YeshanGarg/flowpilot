@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../../lib/api";
-import { elapsedLabel } from "../../lib/format";
+import { elapsedLabel, isOverdue } from "../../lib/format";
 import type { Workflow } from "../../lib/types";
 
 interface Draft {
@@ -23,9 +23,7 @@ export default function EscalationsPage() {
     try {
       const data = await apiClient.getWorkflows();
       // Overdue = still running and pending longer than the SLA threshold.
-      const stale = data.filter(
-        (w) => w.status === "RUNNING" && Date.now() - new Date(w.createdAt).getTime() > 15 * 60000
-      );
+      const stale = data.filter((w) => w.status === "RUNNING" && isOverdue(w.createdAt));
       setOverdue(stale);
     } catch (err) {
       setError((err as Error).message);

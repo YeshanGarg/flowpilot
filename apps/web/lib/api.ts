@@ -117,10 +117,10 @@ export const apiClient = {
     }),
 
   getAutoEscalation: () =>
-    api<{ enabled: boolean; intervalSeconds: number; slaMinutes: number; remindedCount: number }>("/ai/auto-escalation"),
+    api<{ enabled: boolean; intervalSeconds: number; slaSeconds: number; remindedCount: number }>("/ai/auto-escalation"),
 
   setAutoEscalation: (enabled: boolean) =>
-    api<{ enabled: boolean; intervalSeconds: number; slaMinutes: number; remindedCount: number }>("/ai/auto-escalation", {
+    api<{ enabled: boolean; intervalSeconds: number; slaSeconds: number; remindedCount: number }>("/ai/auto-escalation", {
       method: "POST",
       body: JSON.stringify({ enabled }),
     }),

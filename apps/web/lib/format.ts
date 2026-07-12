@@ -13,7 +13,10 @@ export function elapsedLabel(iso: string): string {
   return `${days} day${days === 1 ? "" : "s"}`;
 }
 
-export function isOverdue(iso: string, thresholdMinutes = 15): boolean {
+// Overdue threshold in seconds. Demo default is 30s; set NEXT_PUBLIC_SLA_SECONDS higher (e.g. 3600) in production.
+export const SLA_SECONDS = Number(process.env.NEXT_PUBLIC_SLA_SECONDS ?? 30);
+
+export function isOverdue(iso: string, thresholdSeconds = SLA_SECONDS): boolean {
   const ms = Date.now() - new Date(iso).getTime();
-  return !Number.isNaN(ms) && ms > thresholdMinutes * 60000;
+  return !Number.isNaN(ms) && ms > thresholdSeconds * 1000;
 }

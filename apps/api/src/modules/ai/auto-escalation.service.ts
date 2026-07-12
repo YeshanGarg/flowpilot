@@ -3,8 +3,8 @@ import { WorkflowService } from "../workflow/workflow.service.js";
 import { AIService } from "./ai.service.js";
 import { VLLMProvider } from "./providers/vllm.provider.js";
 
-const SLA_MS = 15 * 60 * 1000;      // a step pending longer than this is overdue
-const TICK_MS = 30 * 1000;          // how often the scheduler checks
+const SLA_MS = Number(process.env["SLA_SECONDS"] ?? 30) * 1000;  // overdue threshold (demo default 30s; set higher in prod)
+const TICK_MS = 15 * 1000;          // how often the scheduler checks
 
 function pendingLabel(iso: Date | string): string {
     const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -48,7 +48,7 @@ export class AutoEscalationService {
         return {
             enabled: this.enabled,
             intervalSeconds: TICK_MS / 1000,
-            slaMinutes: SLA_MS / 60000,
+            slaSeconds: SLA_MS / 1000,
             remindedCount: this.reminded.size
         };
     }
