@@ -33,3 +33,4 @@ apps/api/listmodels.ts
 *.pptx
 *.key
 apps/api/.env.amd.bak
+apps/api/stage-demo.mjs

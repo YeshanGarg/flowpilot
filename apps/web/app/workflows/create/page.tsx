@@ -97,7 +97,7 @@ export default function CreateWorkflowPage() {
         <textarea
           className="mt-3 w-full rounded-md border border-slate-300 p-3 text-sm"
           rows={2}
-          placeholder="e.g. I need admin access to the production database for an urgent incident, budget around $5000"
+          placeholder="e.g. I need admin access to the production database to investigate an urgent outage"
           value={nlText}
           onChange={(event) => setNlText(event.target.value)}
         />

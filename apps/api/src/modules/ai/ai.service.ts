@@ -46,7 +46,10 @@ export class AIService {
 
         const validated = this.businessRules.apply(result, aiContext);
         validated.engine = {
-            model: process.env["VLLM_MODEL"] ?? "Qwen/Qwen3-0.6B",
+            model:
+                process.env["AI_MODEL_LABEL"] ??
+                process.env["VLLM_MODEL"] ??
+                "Qwen/Qwen3-0.6B",
             provider: "vLLM on AMD Developer Cloud",
             agents: REVIEW_AGENTS.length,
             parallel: true,
