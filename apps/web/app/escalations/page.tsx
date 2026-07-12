@@ -17,6 +17,7 @@ export default function EscalationsPage() {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  const [autoEnabled, setAutoEnabled] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -33,9 +34,19 @@ export default function EscalationsPage() {
 
   useEffect(() => {
     void load();
+    apiClient.getAutoEscalation().then((s) => setAutoEnabled(s.enabled)).catch(() => {});
     const interval = setInterval(() => void load(), 8000);
     return () => clearInterval(interval);
   }, [load]);
+
+  async function toggleAuto() {
+    try {
+      const s = await apiClient.setAutoEscalation(!autoEnabled);
+      setAutoEnabled(s.enabled);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
 
   async function runEscalationCheck() {
     setRunning(true);
@@ -93,6 +104,22 @@ export default function EscalationsPage() {
           disabled={running || overdue.length === 0}
         >
           {running ? "Scanning..." : "⚡ Run Escalation Check"}
+        </button>
+      </div>
+
+      <div className="card flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold">Automatic reminders</p>
+          <p className="text-xs text-slate-500">
+            When on, the AI checks every 30s and auto-sends reminders for overdue approvals — no clicks needed.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={toggleAuto}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ${autoEnabled ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}`}
+        >
+          {autoEnabled ? "🟢 Auto: ON" : "⚪ Auto: OFF"}
         </button>
       </div>
 
