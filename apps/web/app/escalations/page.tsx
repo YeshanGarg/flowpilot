@@ -131,13 +131,26 @@ export default function EscalationsPage() {
       <div className="grid gap-3">
         {overdue.map((w) => {
           const draft = drafts[w.id];
+          const reminders = (w.auditLogs || []).filter((a) => a.action === "REMINDER_SENT");
+          const autoSent = reminders.some((a) => (a.message || "").startsWith("[AUTO]"));
           return (
             <article key={w.id} className="card">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-semibold">{w.title}</h2>
-                <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-700">
-                  Overdue · pending {elapsedLabel(w.createdAt)}
-                </span>
+                <div className="flex items-center gap-2">
+                  {autoSent ? (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      🤖 Auto-reminded
+                    </span>
+                  ) : reminders.length > 0 ? (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                      ✓ Reminder sent ({reminders.length})
+                    </span>
+                  ) : null}
+                  <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-semibold text-orange-700">
+                    Overdue · pending {elapsedLabel(w.createdAt)}
+                  </span>
+                </div>
               </div>
 
               {draft ? (

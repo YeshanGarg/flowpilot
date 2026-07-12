@@ -162,6 +162,11 @@ export class WorkflowRepository {
                             order: "asc"
                         }
                     }
+                },
+                auditLogs: {
+                    where: { action: "REMINDER_SENT" },
+                    orderBy: { createdAt: "desc" },
+                    take: 5
                 }
             },
             orderBy: { createdAt: "desc" }
