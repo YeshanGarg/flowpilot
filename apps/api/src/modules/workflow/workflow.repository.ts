@@ -129,18 +129,8 @@ export class WorkflowRepository {
         });
     }
 
-    async deleteById(workflowId: string, actedByUserId: string) {
+    async deleteById(workflowId: string) {
         return prismaClient.$transaction(async (prisma) => {
-            const actor = await prisma.user.findUnique({ where: { id: actedByUserId } });
-
-            if (!actor) {
-                throw new AppError("Acting user not found");
-            }
-
-            if (actor.role !== "ADMIN") {
-                throw new AppError("Only an ADMIN can delete a workflow", 403);
-            }
-
             const workflow = await prisma.workflow.findUnique({ where: { id: workflowId } });
 
             if (!workflow) {

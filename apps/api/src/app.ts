@@ -8,6 +8,7 @@ import workflowTemplateRoutes from "./modules/workflow/workflow-template.routes.
 import workflowRoutes from "./modules/workflow/workflow.routes.js";
 import { errorMiddleware } from "./core/middleware/error-middleware.js";
 import aiRoutes from "./modules/ai/ai.routes.js";
+import authRoutes from "./modules/auth/auth.routes.js";
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use("/users", userRoutes);
 app.use("/workflow-templates", workflowTemplateRoutes);
 app.use("/workflows", workflowRoutes);
 app.use("/ai", aiRoutes);
+app.use("/auth", authRoutes);
 
 app.get("/health", (_, res) => {
   res.status(200).json({

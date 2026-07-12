@@ -96,19 +96,14 @@ export class WorkflowService {
 		return this.workflowRepository.reject(workflowId, actedByUserId, comments);
 	}
 
-	async remove(id: string, actedByUserId: string) {
+	async remove(id: string) {
 		const workflowId = id?.trim();
-		const actorId = actedByUserId?.trim();
 
 		if (!workflowId) {
 			throw new AppError("Workflow ID is required");
 		}
 
-		if (!actorId) {
-			throw new AppError("actedByUserId is required");
-		}
-
-		return this.workflowRepository.deleteById(workflowId, actorId);
+		return this.workflowRepository.deleteById(workflowId);
 	}
 
 	async remind(id: string, message: string) {

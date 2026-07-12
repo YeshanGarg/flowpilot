@@ -2,11 +2,30 @@ import type { ApiSuccess, Organization, User, Workflow, WorkflowTemplate, AIRevi
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
+const ADMIN_TOKEN_KEY = "flowpilot_admin_token";
+
+export function getAdminToken(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+}
+
+export function setAdminToken(token: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(ADMIN_TOKEN_KEY, token);
+}
+
+export function clearAdminToken() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ADMIN_TOKEN_KEY);
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getAdminToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers || {}),
     },
     cache: "no-store",
@@ -73,10 +92,15 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
-  deleteWorkflow: (id: string, actedByUserId: string) =>
+  deleteWorkflow: (id: string) =>
     api<{ id: string }>(`/workflows/${id}`, {
       method: "DELETE",
-      body: JSON.stringify({ actedByUserId }),
+    }),
+
+  adminLogin: (email: string, password: string) =>
+    api<{ token: string; user: { email: string; role: string; name: string } }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     }),
 
   reviewWorkflow: (context: {

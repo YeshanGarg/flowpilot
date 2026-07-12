@@ -3,25 +3,27 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { StatusBadge } from "../../components/status-badge";
-import { apiClient } from "../../lib/api";
-import type { User, Workflow } from "../../lib/types";
+import { apiClient, getAdminToken, setAdminToken, clearAdminToken } from "../../lib/api";
+import type { Workflow } from "../../lib/types";
 
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [actingUserId, setActingUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState("");
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+
   async function load() {
     setError("");
     try {
-      const [workflowData, userData] = await Promise.all([apiClient.getWorkflows(), apiClient.getUsers()]);
-      setWorkflows(workflowData);
-      setUsers(userData);
-      // Default the acting user to an ADMIN, since only admins can delete.
-      setActingUserId((prev) => prev || userData.find((u) => u.role === "ADMIN")?.id || userData[0]?.id || "");
+      const data = await apiClient.getWorkflows();
+      setWorkflows(data);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -30,24 +32,50 @@ export default function WorkflowsPage() {
   }
 
   useEffect(() => {
+    setIsAdmin(Boolean(getAdminToken()));
     void load();
   }, []);
 
-  const actingUser = users.find((u) => u.id === actingUserId);
-  const isAdmin = actingUser?.role === "ADMIN";
+  async function onLogin(event: React.FormEvent) {
+    event.preventDefault();
+    setLoggingIn(true);
+    setLoginError("");
+    try {
+      const { token } = await apiClient.adminLogin(email.trim(), password);
+      setAdminToken(token);
+      setIsAdmin(true);
+      setShowLogin(false);
+      setEmail("");
+      setPassword("");
+    } catch (err) {
+      setLoginError((err as Error).message);
+    } finally {
+      setLoggingIn(false);
+    }
+  }
+
+  function onLogout() {
+    clearAdminToken();
+    setIsAdmin(false);
+  }
 
   async function onDelete(workflow: Workflow) {
-    if (!actingUserId) return;
     if (!window.confirm(`Delete "${workflow.title}"? This permanently removes the workflow and its history.`)) {
       return;
     }
     setError("");
     setDeletingId(workflow.id);
     try {
-      await apiClient.deleteWorkflow(workflow.id, actingUserId);
+      await apiClient.deleteWorkflow(workflow.id);
       await load();
     } catch (err) {
-      setError((err as Error).message);
+      const message = (err as Error).message;
+      // Session expired / invalid → drop back to logged-out state.
+      if (/admin|session|auth/i.test(message)) {
+        clearAdminToken();
+        setIsAdmin(false);
+      }
+      setError(message);
     } finally {
       setDeletingId("");
     }
@@ -55,31 +83,61 @@ export default function WorkflowsPage() {
 
   return (
     <section className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Workflows</h1>
-        <Link href="/workflows/create" className="rounded-md bg-brand-700 px-4 py-2 text-sm font-semibold text-white">
-          Create Workflow
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAdmin ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              🔓 Admin · Log out
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowLogin((v) => !v)}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              🔒 Admin Login
+            </button>
+          )}
+          <Link href="/workflows/create" className="rounded-md bg-brand-700 px-4 py-2 text-sm font-semibold text-white">
+            Create Workflow
+          </Link>
+        </div>
       </div>
 
-      <div className="card flex flex-wrap items-center gap-3">
-        <span className="text-sm font-medium text-slate-600">Acting as</span>
-        <select
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
-          value={actingUserId}
-          onChange={(event) => setActingUserId(event.target.value)}
-        >
-          <option value="">Select user</option>
-          {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.name} ({user.role || "EMPLOYEE"})
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-slate-500">
-          {isAdmin ? "Admin can delete workflows." : "Only an ADMIN can delete workflows."}
-        </span>
-      </div>
+      {showLogin && !isAdmin ? (
+        <form className="card grid max-w-md gap-3" onSubmit={onLogin}>
+          <h2 className="text-sm font-semibold">Admin Login</h2>
+          <p className="text-xs text-slate-500">Only an administrator can delete workflows.</p>
+          <input
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            type="email"
+            placeholder="admin@flowpilot.dev"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {loginError ? <p className="text-sm text-rose-600">{loginError}</p> : null}
+          <button
+            className="w-fit rounded-md bg-brand-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            disabled={loggingIn}
+          >
+            {loggingIn ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+      ) : null}
 
       {error ? <p className="rounded-md bg-rose-100 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
       {loading ? <p>Loading workflows...</p> : null}
@@ -96,15 +154,17 @@ export default function WorkflowsPage() {
                 </div>
                 <p className="mt-2 text-xs text-slate-500">Workflow ID: {workflow.id}</p>
               </Link>
-              <button
-                type="button"
-                onClick={() => onDelete(workflow)}
-                disabled={!isAdmin || deletingId === workflow.id}
-                title={isAdmin ? "Delete workflow" : "Only an ADMIN can delete"}
-                className="shrink-0 rounded-md border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {deletingId === workflow.id ? "Deleting..." : "🗑 Delete"}
-              </button>
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => onDelete(workflow)}
+                  disabled={deletingId === workflow.id}
+                  title="Delete workflow"
+                  className="shrink-0 rounded-md border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-40"
+                >
+                  {deletingId === workflow.id ? "Deleting..." : "🗑 Delete"}
+                </button>
+              ) : null}
             </div>
           </div>
         ))}

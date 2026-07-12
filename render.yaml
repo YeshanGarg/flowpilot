@@ -25,3 +25,10 @@ services:
         sync: false
       - key: VLLM_MODEL
         value: Qwen/Qwen3-0.6B
+      # Admin login credentials — set ADMIN_PASSWORD in the Render dashboard (secret)
+      - key: ADMIN_EMAIL
+        value: admin@flowpilot.dev
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_TOKEN_SECRET
+        generateValue: true
