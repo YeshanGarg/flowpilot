@@ -36,9 +36,8 @@ export default function ApprovalsPage() {
       const [workflowData, userData] = await Promise.all([apiClient.getWorkflows(), apiClient.getUsers()]);
       setWorkflows(workflowData.filter((workflow) => workflow.status === "RUNNING"));
       setUsers(userData);
-      if (!actedByUserId && userData[0]) {
-        setActedByUserId(userData[0].id);
-      }
+      // Only set a default once; never override the user's current selection.
+      setActedByUserId((prev) => prev || userData[0]?.id || "");
     } catch (err) {
       setError((err as Error).message);
     }
