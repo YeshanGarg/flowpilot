@@ -129,6 +129,32 @@ export class WorkflowRepository {
         });
     }
 
+    async deleteById(workflowId: string, actedByUserId: string) {
+        return prismaClient.$transaction(async (prisma) => {
+            const actor = await prisma.user.findUnique({ where: { id: actedByUserId } });
+
+            if (!actor) {
+                throw new AppError("Acting user not found");
+            }
+
+            if (actor.role !== "ADMIN") {
+                throw new AppError("Only an ADMIN can delete a workflow", 403);
+            }
+
+            const workflow = await prisma.workflow.findUnique({ where: { id: workflowId } });
+
+            if (!workflow) {
+                throw new AppError("Workflow not found", 404);
+            }
+
+            await prisma.auditLog.deleteMany({ where: { workflowId } });
+            await prisma.workflowStepExecution.deleteMany({ where: { workflowId } });
+            await prisma.workflow.delete({ where: { id: workflowId } });
+
+            return { id: workflowId };
+        });
+    }
+
     async addReminder(workflowId: string, message: string) {
         const workflow = await prismaClient.workflow.findUnique({ where: { id: workflowId } });
 

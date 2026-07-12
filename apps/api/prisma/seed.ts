@@ -62,6 +62,21 @@ async function main() {
         }
     });
 
+    await prismaClient.user.upsert({
+        where: { email: "admin@flowpilot.dev" },
+        update: {
+            name: "Admin User",
+            role: "ADMIN",
+            organizationId: organization.id
+        },
+        create: {
+            name: "Admin User",
+            email: "admin@flowpilot.dev",
+            role: "ADMIN",
+            organizationId: organization.id
+        }
+    });
+
     const workflowTemplate = await prismaClient.workflowTemplate.upsert({
         where: { id: workflowTemplateId },
         update: {

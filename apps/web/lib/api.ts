@@ -73,6 +73,12 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
+  deleteWorkflow: (id: string, actedByUserId: string) =>
+    api<{ id: string }>(`/workflows/${id}`, {
+      method: "DELETE",
+      body: JSON.stringify({ actedByUserId }),
+    }),
+
   reviewWorkflow: (context: {
     workflowTitle: string;
     workflowTemplate: string;

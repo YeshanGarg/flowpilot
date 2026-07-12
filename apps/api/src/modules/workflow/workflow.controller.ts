@@ -46,4 +46,11 @@ export class WorkflowController {
 
 		return res.status(200).json({ success: true, data: workflow });
 	}
+
+	async remove(req: Request, res: Response) {
+		const id = (Array.isArray(req.params.id) ? req.params.id[0] : req.params.id) ?? "";
+		const result = await workflowService.remove(id, req.body?.actedByUserId);
+
+		return res.status(200).json({ success: true, data: result });
+	}
 }
