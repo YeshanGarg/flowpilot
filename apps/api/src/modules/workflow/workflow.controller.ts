@@ -11,10 +11,18 @@ export class WorkflowController {
 		return res.status(201).json({ success: true, data: workflow });
 	}
 
-	async findAll(_: Request, res: Response) {
-		const workflows = await workflowService.findAll();
+	async findAll(req: Request, res: Response) {
+		const demoParam = Array.isArray(req.query.demo) ? req.query.demo[0] : req.query.demo;
+		const isDemo = demoParam === undefined ? undefined : demoParam === "true";
+		const workflows = await workflowService.findAll(isDemo);
 
 		return res.status(200).json({ success: true, data: workflows });
+	}
+
+	async endDemo(_: Request, res: Response) {
+		const result = await workflowService.endDemo();
+
+		return res.status(200).json({ success: true, data: result });
 	}
 
 	async findById(req: Request, res: Response) {

@@ -108,6 +108,8 @@ model Workflow {
   status           WorkflowStatus @default(PENDING)
   currentStepOrder Int            @default(1)
 
+  isDemo Boolean @default(false)
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 

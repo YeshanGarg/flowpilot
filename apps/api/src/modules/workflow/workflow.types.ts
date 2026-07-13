@@ -6,6 +6,7 @@ export interface CreateWorkflowDto {
     requesterId: string;
     organizationId: string;
     payload: Prisma.InputJsonValue;
+    isDemo?: boolean;
 }
 
 export interface ApproveWorkflowDto {

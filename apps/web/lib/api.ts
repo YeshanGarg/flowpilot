@@ -19,6 +19,19 @@ export function clearAdminToken() {
   window.localStorage.removeItem(ADMIN_TOKEN_KEY);
 }
 
+const DEMO_MODE_KEY = "flowpilot_demo_mode";
+
+// Demo mode is ON by default so the app opens with isolated, disposable demo data.
+export function isDemoMode(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(DEMO_MODE_KEY) !== "off";
+}
+
+export function setDemoMode(on: boolean) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(DEMO_MODE_KEY, on ? "on" : "off");
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getAdminToken();
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -68,7 +81,7 @@ export const apiClient = {
       body: JSON.stringify(payload),
     }),
 
-  getWorkflows: () => api<Workflow[]>("/workflows"),
+  getWorkflows: () => api<Workflow[]>(`/workflows?demo=${isDemoMode() ? "true" : "false"}`),
   getWorkflow: (id: string) => api<Workflow>(`/workflows/${id}`),
   createWorkflow: (payload: {
     title: string;
@@ -79,7 +92,7 @@ export const apiClient = {
   }) =>
     api<Workflow>("/workflows", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, isDemo: isDemoMode() }),
     }),
   approveWorkflow: (id: string, payload: { actedByUserId: string; comments?: string }) =>
     api<Workflow>(`/workflows/${id}/approve`, {
@@ -95,6 +108,11 @@ export const apiClient = {
   deleteWorkflow: (id: string) =>
     api<{ id: string }>(`/workflows/${id}`, {
       method: "DELETE",
+    }),
+
+  endDemo: () =>
+    api<{ deleted: number }>("/workflows/end-demo", {
+      method: "POST",
     }),
 
   adminLogin: (email: string, password: string) =>

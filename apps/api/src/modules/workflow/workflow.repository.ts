@@ -5,7 +5,7 @@ import type { CreateWorkflowDto } from "./workflow.types.js";
 
 export class WorkflowRepository {
     async create(createWorkflowDto: CreateWorkflowDto) {
-        const { title, workflowTemplateId, requesterId, organizationId, payload } = createWorkflowDto;
+        const { title, workflowTemplateId, requesterId, organizationId, payload, isDemo } = createWorkflowDto;
 
         return prismaClient.$transaction(async (prisma) => {
             const template = await prisma.workflowTemplate.findUnique({
@@ -48,6 +48,7 @@ export class WorkflowRepository {
                     requesterId,
                     organizationId,
                     payload,
+                    isDemo: isDemo ?? false,
                     status: WorkflowStatus.RUNNING,
                     currentStepOrder: template.steps[0]!.order
                 }
@@ -145,6 +146,26 @@ export class WorkflowRepository {
         });
     }
 
+    async deleteAllDemo() {
+        return prismaClient.$transaction(async (prisma) => {
+            const demoWorkflows = await prisma.workflow.findMany({
+                where: { isDemo: true },
+                select: { id: true }
+            });
+            const ids = demoWorkflows.map((w) => w.id);
+
+            if (ids.length === 0) {
+                return { deleted: 0 };
+            }
+
+            await prisma.auditLog.deleteMany({ where: { workflowId: { in: ids } } });
+            await prisma.workflowStepExecution.deleteMany({ where: { workflowId: { in: ids } } });
+            await prisma.workflow.deleteMany({ where: { id: { in: ids } } });
+
+            return { deleted: ids.length };
+        });
+    }
+
     async addReminder(workflowId: string, message: string) {
         const workflow = await prismaClient.workflow.findUnique({ where: { id: workflowId } });
 
@@ -164,8 +185,9 @@ export class WorkflowRepository {
         return this.findById(workflowId);
     }
 
-    async findAll() {
+    async findAll(isDemo?: boolean) {
         return prismaClient.workflow.findMany({
+            where: isDemo === undefined ? {} : { isDemo },
             include: {
                 workflowTemplate: true,
                 requester: true,

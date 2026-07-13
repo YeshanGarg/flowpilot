@@ -44,8 +44,12 @@ export class WorkflowService {
 		});
 	}
 
-	async findAll() {
-		return this.workflowRepository.findAll();
+	async findAll(isDemo?: boolean) {
+		return this.workflowRepository.findAll(isDemo);
+	}
+
+	async endDemo() {
+		return this.workflowRepository.deleteAllDemo();
 	}
 
 	async findById(id: string) {

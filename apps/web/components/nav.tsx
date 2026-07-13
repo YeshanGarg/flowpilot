@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ThemeToggle } from "./theme-toggle";
+import { DemoModeControl, DemoModeBanner } from "./demo-mode";
 
 const links = [
   { href: "/", label: "Dashboard" },
@@ -14,6 +15,7 @@ const links = [
 export function Nav() {
   return (
     <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
+      <DemoModeBanner />
       <nav className="container-shell flex flex-wrap items-center gap-2 py-4">
         <div className="mr-2 rounded-lg bg-brand-700 px-3 py-1.5 text-sm font-bold text-white">FlowPilot</div>
         <span className="mr-2 hidden rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-500 sm:inline">
@@ -28,7 +30,8 @@ export function Nav() {
             {link.label}
           </Link>
         ))}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <DemoModeControl />
           <ThemeToggle />
         </div>
       </nav>

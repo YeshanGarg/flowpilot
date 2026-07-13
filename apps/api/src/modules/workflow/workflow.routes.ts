@@ -7,6 +7,7 @@ const workflowController = new WorkflowController();
 
 router.post("/", (req, res) => workflowController.create(req, res));
 router.get("/", (req, res) => workflowController.findAll(req, res));
+router.post("/end-demo", (req, res) => workflowController.endDemo(req, res));
 router.get("/:id", (req, res) => workflowController.findById(req, res));
 router.post("/:id/approve", (req, res) => workflowController.approve(req, res));
 router.post("/:id/reject", (req, res) => workflowController.reject(req, res));
